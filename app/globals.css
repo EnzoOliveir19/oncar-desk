@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base dark grafite: sem opção de light mode, o app é dark-first sempre */
+html {
+  color-scheme: dark;
+  background-color: #1F1F29;
+}
+
+body {
+  background-color: #1F1F29;
+  color: #D8D8E0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Selection na cor accent, sutil */
+::selection {
+  background-color: rgba(62, 94, 232, 0.35);
+  color: #D8D8E0;
+}
+
+/* Scrollbar suave em dark */
+::-webkit-scrollbar        { width: 8px; height: 8px; }
+::-webkit-scrollbar-track  { background: #1F1F29; }
+::-webkit-scrollbar-thumb  { background: #48485A; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #5C5C70; }
