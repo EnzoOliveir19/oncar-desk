@@ -67,7 +67,7 @@ Ainda em **Authentication**:
 8. **Redirect URLs**: adicione `http://localhost:3000/auth/callback` e depois do deploy `https://oncar-desk.vercel.app/auth/callback`.
 
 ### 4. Rodar o projeto local
-
+##aa
 ```bash
 git clone git@github.com:<seu-usuario>/oncar-desk.git
 cd oncar-desk
