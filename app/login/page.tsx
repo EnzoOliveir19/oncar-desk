@@ -17,7 +17,7 @@ export default function LoginPage() {
         redirectTo: `${window.location.origin}/auth/callback`,
         queryParams: {
           // Restrição de domínio no lado do Google.
-          hd: "oncarapp.com.br",
+          hd: "oncar.com.br",
         },
       },
     });
