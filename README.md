@@ -30,11 +30,11 @@ Assim que estiver pronto:
 5. Cole o conteúdo inteiro de `supabase/schema.sql` e clique em **Run**.
 6. Se rodou sem erro, você deve ver 11 linhas em **Table Editor → seats**.
 
-**⚠️ Ajuste o email do Gustavo.** No `schema.sql` deixei `gustavo@oncarapp.com.br` como placeholder. Se o email real dele for outro, rode isso no SQL Editor:
+**⚠️ Ajuste o email do Gustavo.** No `schema.sql` deixei `gustavo@oncar.com.br` como placeholder. Se o email real dele for outro, rode isso no SQL Editor:
 
 ```sql
 update public.seats
-   set fixed_user_email = 'email-real-do-gustavo@oncarapp.com.br'
+   set fixed_user_email = 'email-real-do-gustavo@oncar.com.br'
  where id = 1;
 ```
 
@@ -84,7 +84,7 @@ npm install
 npm run dev
 ```
 
-Abre [http://localhost:3000](http://localhost:3000). Deve redirecionar pra `/login`. Login com uma conta `@oncarapp.com.br` e você cai no dashboard placeholder. Se rolou, Fase 1 tá redonda. 🎉
+Abre [http://localhost:3000](http://localhost:3000). Deve redirecionar pra `/login`. Login com uma conta `@oncara.com.br` e você cai no dashboard placeholder. Se rolou, Fase 1 tá redonda. 🎉
 
 ### 5. Deploy no Vercel
 

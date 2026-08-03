@@ -64,10 +64,10 @@ create index reservations_user_id_idx on public.reservations(user_id);
 -- ============================
 -- IMPORTANTE: troque o email do Gustavo pelo email real dele no Google Workspace
 -- da Oncar antes de rodar. Se não souber ainda, deixe null e atualize depois:
---   update public.seats set fixed_user_email='gustavo@oncarapp.com.br' where id=1;
+--   update public.seats set fixed_user_email='gustavo@oncar.com.br' where id=1;
 
 insert into public.seats (id, label, cluster, position, is_fixed, fixed_user_email) values
-  ( 1, 'Gustavo',       'gustavo', 'solo',            true,  'gustavo@oncarapp.com.br'),
+  ( 1, 'Gustavo',       'gustavo', 'solo',            true,  'gustavo@oncar.com.br'),
   ( 2, 'Cluster A - Ponta',  'a', 'ponta',            false, null),
   ( 3, 'Cluster A - Cima Esq', 'a', '2x2-top-left',   false, null),
   ( 4, 'Cluster A - Cima Dir', 'a', '2x2-top-right',  false, null),

@@ -58,7 +58,7 @@ export default function LoginPage() {
         )}
 
         <p className="mt-8 text-center text-xs text-text-muted">
-          Só emails <span className="font-mono">@oncarapp.com.br</span>.
+          Só emails <span className="font-mono">@oncar.com.br</span>.
         </p>
       </div>
     </main>

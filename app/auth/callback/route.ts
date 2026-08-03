@@ -18,7 +18,7 @@ export async function GET(request: Request) {
       // Trava dupla: mesmo que alguém contorne o `hd=` do OAuth,
       // rejeitamos qualquer email fora do domínio.
       const email = data.user.email ?? "";
-      if (!email.endsWith("@oncarapp.com.br")) {
+      if (!email.endsWith("@oncar.com.br")) {
         await supabase.auth.signOut();
         return NextResponse.redirect(`${origin}/login?error=domain`);
       }
