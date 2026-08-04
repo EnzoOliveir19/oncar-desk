@@ -3,6 +3,20 @@
 -- =====================================================================
 -- Rode este script inteiro no SQL Editor do Supabase (Database -> SQL Editor).
 -- Ele cria as tabelas, seed dos 11 assentos, triggers, RLS e habilita realtime.
+--
+-- Pré-requisitos (Extensions no dashboard: Database → Extensions):
+--   - `pg_net`  — HTTP POST assíncrono (usado pra notificação no Slack)
+--
+-- Pós-setup: configurar o webhook do Slack no Vault (uma vez só):
+--
+--   select vault.create_secret(
+--     'https://hooks.slack.com/services/T00000000/B0000000000/xxxxxxxxxxxxxxxxxxx',
+--     'slack_webhook_url',
+--     'Webhook do canal #tech pra notificação de escritório lotado'
+--   );
+--
+-- Sem o secret, a função `notify_office_full` simplesmente pula o POST
+-- (não quebra reservas — só não notifica).
 -- =====================================================================
 
 
@@ -113,7 +127,11 @@ create trigger on_auth_user_created
   for each row execute function public.handle_new_user();
 
 
--- 4.2 Valida cada reserva: cadeira fixa só pro dono, sem data passada.
+-- 4.2 Valida cada reserva:
+--   - cadeira fixa só pro dono
+--   - sem data passada
+--   - só seg-sex (dia da semana: 1=seg .. 5=sex; 0=dom, 6=sáb)
+--   - horizonte máximo de 14 dias corridos a partir de hoje
 create or replace function public.validate_reservation()
 returns trigger
 language plpgsql
@@ -123,6 +141,7 @@ as $$
 declare
   seat_row   public.seats%rowtype;
   user_email text;
+  dow        int;
 begin
   select * into seat_row from public.seats where id = new.seat_id;
 
@@ -137,6 +156,17 @@ begin
     raise exception 'Não é possível reservar uma data no passado.';
   end if;
 
+  -- Horizonte de 14 dias corridos
+  if new.date > current_date + interval '14 days' then
+    raise exception 'Reserva permitida no máximo 14 dias no futuro.';
+  end if;
+
+  -- Só dias úteis (seg-sex). extract(dow) retorna 0=dom .. 6=sáb.
+  dow := extract(dow from new.date);
+  if dow = 0 or dow = 6 then
+    raise exception 'Reservas só em dias úteis (seg-sex).';
+  end if;
+
   return new;
 end;
 $$;
@@ -146,9 +176,10 @@ create trigger validate_reservation_trigger
   for each row execute function public.validate_reservation();
 
 
--- 4.3 Trigger de notificação: quando escritório fica 11/11, marca pra notificar.
--- A chamada HTTP pro Slack vira responsabilidade de uma Edge Function (Fase 3).
--- Por enquanto, apenas grava em daily_notifications de forma idempotente.
+-- 4.3 Trigger de notificação: quando as 10 hot-desks batem (Gustavo, cadeira
+-- fixa id=1, não conta — ele está sempre lá), marca pra notificar no Slack.
+-- A chamada HTTP acontece via Edge Function (ver §7 mais abaixo), disparada por
+-- pg_net.http_post logo depois do insert em daily_notifications.
 create or replace function public.notify_office_full()
 returns trigger
 language plpgsql
@@ -156,17 +187,47 @@ security definer
 set search_path = public
 as $$
 declare
-  reservation_count int;
+  hotdesk_count int;
+  already_notified boolean;
+  slack_url text;
 begin
-  select count(*) into reservation_count
+  select count(*) into hotdesk_count
   from public.reservations
-  where date = new.date;
+  where date = new.date and seat_id <> 1;
 
-  if reservation_count = 11 then
-    insert into public.daily_notifications (date)
-    values (new.date)
-    on conflict (date) do nothing;
-    -- Fase 3: aqui a Edge Function faz POST no webhook do Slack via pg_net.
+  if hotdesk_count = 10 then
+    -- Idempotência: só dispara uma vez por dia
+    select exists (
+      select 1 from public.daily_notifications where date = new.date
+    ) into already_notified;
+
+    if not already_notified then
+      insert into public.daily_notifications (date) values (new.date);
+
+      -- Se o webhook estiver configurado no vault, dispara HTTP post
+      -- via pg_net (assíncrono, não bloqueia o insert de reservation).
+      begin
+        select decrypted_secret into slack_url
+        from vault.decrypted_secrets
+        where name = 'slack_webhook_url';
+
+        if slack_url is not null then
+          perform net.http_post(
+            url := slack_url,
+            headers := '{"Content-Type": "application/json"}'::jsonb,
+            body := jsonb_build_object(
+              'text', format(
+                '🔥 Escritório lotado em %s! 10/10 hot-desks ocupadas.',
+                to_char(new.date, 'DD/MM')
+              )
+            )
+          );
+        end if;
+      exception when others then
+        -- Não falha o insert de reservation se o post falhar
+        null;
+      end;
+    end if;
   end if;
 
   return new;

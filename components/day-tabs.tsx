@@ -1,19 +1,17 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-import { formatDayLabel, isToday } from "@/lib/utils";
+import { cn, formatDayLabel, isToday } from "@/lib/utils";
 
 type Props = {
   days: string[];
   selected: string;
   onSelect: (date: string) => void;
-  /** Contagem de reservas por dia: { 'YYYY-MM-DD': number } */
   counts: Record<string, number>;
 };
 
 export function DayTabs({ days, selected, onSelect, counts }: Props) {
   return (
-    <nav className="flex items-center gap-1">
+    <nav className="flex items-center gap-1" role="tablist">
       {days.map((date) => {
         const { weekday, day } = formatDayLabel(date);
         const isActive = date === selected;
@@ -23,35 +21,52 @@ export function DayTabs({ days, selected, onSelect, counts }: Props) {
         return (
           <button
             key={date}
+            role="tab"
+            aria-selected={isActive}
+            aria-label={`${weekday} dia ${day}${count > 0 ? `, ${count} reservas` : ""}`}
             onClick={() => onSelect(date)}
             className={cn(
-              "relative flex flex-col items-center px-4 py-2 rounded-lg transition-all duration-200",
-              "hover:bg-surface/60",
+              "relative flex flex-col items-center gap-0.5 px-3 py-1.5 pb-2 rounded-[10px]",
+              "min-w-[46px] transition-colors duration-200",
+              "border",
               isActive
-                ? "bg-surface text-text-primary"
-                : "text-text-muted"
+                ? "bg-accent/10 border-accent/30"
+                : "bg-transparent border-transparent hover:bg-hairline"
             )}
           >
-            <span className="text-[11px] font-medium uppercase tracking-wider">
+            <span
+              className={cn(
+                "font-mono text-[10px] font-medium uppercase tracking-[0.15em]",
+                isActive ? "text-accent-glow" : "text-text-muted"
+              )}
+            >
               {weekday}
             </span>
             <span
               className={cn(
-                "font-mono text-lg leading-tight",
+                "font-mono text-base font-medium leading-none tabular-nums",
                 isActive ? "text-text-primary" : "text-text-secondary"
               )}
             >
               {day}
             </span>
-
-            {/* Dot indicador: hoje = accent, outros dias com reserva = muted */}
-            {today && (
-              <span className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-accent" />
-            )}
-
-            {/* Mini contador quando não é a aba ativa */}
+            {/* Dot: ativo = accent-glow. Hoje sem estar ativo = accent muted. */}
+            <span
+              className={cn(
+                "h-1 w-1 rounded-full transition-colors",
+                isActive
+                  ? "bg-accent-glow"
+                  : today
+                    ? "bg-accent/50"
+                    : "bg-transparent"
+              )}
+            />
+            {/* Badge de contagem quando não é a aba ativa */}
             {!isActive && count > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] flex items-center justify-center rounded-full bg-surface text-[9px] font-mono text-text-muted">
+              <span
+                aria-hidden
+                className="absolute -top-1 -right-1 min-w-[15px] h-[15px] px-1 flex items-center justify-center rounded-full bg-surface-dark border border-hairline text-[9px] font-mono text-text-secondary tabular-nums"
+              >
                 {count}
               </span>
             )}
