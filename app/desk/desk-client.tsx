@@ -39,16 +39,21 @@ export function DeskClient({
 
   const {
     reservations,
+    reservationsByDay,
     applyReserveOptimistic,
     applyCancelOptimistic,
     revertTo,
-  } = useReservations(initialReservations[selectedDate] ?? [], selectedDate);
+  } = useReservations(initialReservations, selectedDate);
 
   const myReservation = reservations.find((r) => r.user_id === profile.id);
 
-  // Contagens em tempo real: hot-desks (exclui seat_id=1 do Gustavo)
-  const liveCounts: Record<string, number> = { ...initialCounts };
-  liveCounts[selectedDate] = reservations.length;
+  // Contagens dos tabs: derivadas do cache por dia (fica correto ao trocar de
+  // dia, não do snapshot congelado do SSR). Cai no initialCounts se o dia
+  // ainda não foi carregado no cache.
+  const liveCounts: Record<string, number> = {};
+  for (const d of days) {
+    liveCounts[d] = reservationsByDay[d]?.length ?? initialCounts[d] ?? 0;
+  }
   const hotDeskCount = reservations.filter((r) => r.seat_id !== 1).length;
 
   // ── Cursor parallax no mapa (respeita reduced-motion) ─────────
@@ -217,6 +222,7 @@ export function DeskClient({
             currentUserId={profile.id}
             onSeatClick={handleSeatClick}
             disabled={isPending}
+            dayKey={selectedDate}
           />
         </div>
       </main>

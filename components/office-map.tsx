@@ -33,6 +33,9 @@ type Props = {
   currentUserId: string;
   onSeatClick: (seatId: number) => void;
   disabled?: boolean;
+  /** Data selecionada — usada na key das cadeiras pra remontarem ao trocar de
+   *  dia (evita swivel fantasma e garante estado limpo por dia). */
+  dayKey: string;
 };
 
 export function OfficeMap({
@@ -41,6 +44,7 @@ export function OfficeMap({
   currentUserId,
   onSeatClick,
   disabled,
+  dayKey,
 }: Props) {
   // Só hot-desks contam pro "cheio" (Gustavo é fixo, sempre lá)
   const hotDeskCount = reservations.filter((r) => r.seat_id !== 1).length;
@@ -103,7 +107,7 @@ export function OfficeMap({
         key: paintKey(layout.e, layout.n),
         node: (
           <Chair
-            key={`chair-${layout.id}`}
+            key={`chair-${dayKey}-${layout.id}`}
             layout={layout}
             reservation={reservation}
             isMine={isMine}
@@ -123,7 +127,7 @@ export function OfficeMap({
 
     list.sort((a, b) => b.key - a.key);
     return list.map((i) => i.node);
-  }, [seats, reservationMap, currentUserId, onSeatClick, disabled]);
+  }, [seats, reservationMap, currentUserId, onSeatClick, disabled, dayKey]);
 
   return (
     <svg
