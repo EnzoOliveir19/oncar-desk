@@ -37,10 +37,12 @@ export function DeskClient({
   // Snapshot do "hoje" no mount pra detectar virada de dia
   const mountedTodayRef = useRef(days[0]);
 
-  const { reservations } = useReservations(
-    initialReservations[selectedDate] ?? [],
-    selectedDate
-  );
+  const {
+    reservations,
+    applyReserveOptimistic,
+    applyCancelOptimistic,
+    revertTo,
+  } = useReservations(initialReservations[selectedDate] ?? [], selectedDate);
 
   const myReservation = reservations.find((r) => r.user_id === profile.id);
 
@@ -114,24 +116,51 @@ export function DeskClient({
       setError(null);
       setHintDismissed(true);
 
+      // Snapshot pra reverter se o servidor recusar
+      const snapshot = reservations;
+      const me = {
+        id: profile.id,
+        full_name: profile.full_name,
+        avatar_url: profile.avatar_url,
+        email: profile.email,
+      };
+
       if (myReservation) {
         if (myReservation.seat_id !== seatId) {
           setError("Você já reservou outra cadeira nesse dia. Cancele primeiro.");
           return;
         }
+        // Cancelar: some da tela IMEDIATAMENTE, servidor confirma em background
+        applyCancelOptimistic(profile.id);
         startTransition(async () => {
           const result = await cancelReservation(selectedDate);
-          if (result.error) setError(result.error);
+          if (result.error) {
+            setError(result.error);
+            revertTo(snapshot); // desfaz o otimismo
+          }
         });
         return;
       }
 
+      // Reservar: aparece na tela IMEDIATAMENTE
+      applyReserveOptimistic(seatId, me);
       startTransition(async () => {
         const result = await reserveSeat(seatId, selectedDate);
-        if (result.error) setError(result.error);
+        if (result.error) {
+          setError(result.error);
+          revertTo(snapshot);
+        }
       });
     },
-    [myReservation, selectedDate]
+    [
+      myReservation,
+      selectedDate,
+      reservations,
+      profile,
+      applyReserveOptimistic,
+      applyCancelOptimistic,
+      revertTo,
+    ]
   );
 
   const seatLabel = myReservation

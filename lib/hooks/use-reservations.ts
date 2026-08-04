@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Reservation, Profile } from "@/lib/types";
 
@@ -9,11 +9,12 @@ export type ReservationWithProfile = Reservation & {
 };
 
 /**
- * Mantém a lista de reservas atualizada via Supabase Realtime.
+ * Mantém a lista de reservas atualizada via Supabase Realtime + mutações otimistas.
  *
  * - Recebe `initialData` do server component (SSR)
- * - Escuta INSERT/DELETE na tabela `reservations`
- * - Quando muda, refaz a query pra pegar o profile junto (evita manter cache complexo)
+ * - Escuta INSERT/DELETE na tabela `reservations` (só do dia selecionado)
+ * - Expõe `applyOptimistic` pra o clique atualizar a UI IMEDIATAMENTE
+ * - O realtime reconcilia o estado real quando o servidor confirma
  */
 export function useReservations(
   initialData: ReservationWithProfile[],
@@ -21,7 +22,10 @@ export function useReservations(
 ) {
   const [reservations, setReservations] =
     useState<ReservationWithProfile[]>(initialData);
-  const [loading, setLoading] = useState(false);
+
+  // Guarda a data atual pra ignorar refetch de datas antigas (race condition)
+  const dateRef = useRef(date);
+  dateRef.current = date;
 
   const fetchReservations = useCallback(async () => {
     const supabase = createClient();
@@ -30,12 +34,13 @@ export function useReservations(
       .select("*, profiles(id, full_name, avatar_url, email)")
       .eq("date", date);
 
-    if (data) {
+    // Só aplica se ainda estamos no mesmo dia (evita sobrescrever com dado velho)
+    if (data && dateRef.current === date) {
       setReservations(data as ReservationWithProfile[]);
     }
   }, [date]);
 
-  // Quando a data muda, atualiza
+  // Quando a data muda, reseta pro SSR daquele dia
   useEffect(() => {
     setReservations(initialData);
   }, [initialData]);
@@ -54,8 +59,6 @@ export function useReservations(
           filter: `date=eq.${date}`,
         },
         () => {
-          // Refetch completo pra pegar o profile junto.
-          // Mais simples que montar o join localmente.
           fetchReservations();
         }
       )
@@ -68,13 +71,41 @@ export function useReservations(
 
   return {
     reservations,
-    loading,
-    /** Atualiza otimisticamente enquanto a server action resolve */
-    addOptimistic: (reservation: ReservationWithProfile) => {
-      setReservations((prev) => [...prev, reservation]);
+
+    /**
+     * Reserva otimista: insere localmente na hora, sem esperar servidor.
+     * Se a pessoa já tinha uma reserva no dia, troca de cadeira.
+     */
+    applyReserveOptimistic: (
+      seatId: number,
+      me: Pick<Profile, "id" | "full_name" | "avatar_url" | "email">
+    ) => {
+      setReservations((prev) => {
+        // Remove qualquer reserva minha anterior nesse dia
+        const withoutMine = prev.filter((r) => r.user_id !== me.id);
+        const optimistic: ReservationWithProfile = {
+          id: `optimistic-${seatId}-${date}`,
+          user_id: me.id,
+          seat_id: seatId,
+          date,
+          created_at: new Date().toISOString(),
+          profiles: me,
+        };
+        return [...withoutMine, optimistic];
+      });
     },
-    removeOptimistic: (userId: string) => {
+
+    /** Cancelamento otimista: remove minha reserva do dia na hora */
+    applyCancelOptimistic: (userId: string) => {
       setReservations((prev) => prev.filter((r) => r.user_id !== userId));
     },
+
+    /** Reverte pra um snapshot (usado quando a server action falha) */
+    revertTo: (snapshot: ReservationWithProfile[]) => {
+      setReservations(snapshot);
+    },
+
+    /** Força refetch (fallback) */
+    refetch: fetchReservations,
   };
 }
