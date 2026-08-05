@@ -5,7 +5,10 @@ import { createClient } from "@/lib/supabase/client";
 import type { Reservation, Profile } from "@/lib/types";
 
 export type ReservationWithProfile = Reservation & {
-  profiles: Pick<Profile, "id" | "full_name" | "avatar_url" | "email"> | null;
+  // NUNCA incluir `email` aqui — o cliente não precisa e não deve ver emails
+  // de outros usuários. Só o próprio usuário lê o próprio email via a query
+  // separada do `profile` no server component.
+  profiles: Pick<Profile, "id" | "full_name" | "avatar_url"> | null;
 };
 
 type ByDay = Record<string, ReservationWithProfile[]>;
@@ -37,7 +40,7 @@ export function useReservations(initialByDay: ByDay, selectedDate: string) {
     const supabase = createClient();
     const { data } = await supabase
       .from("reservations")
-      .select("*, profiles(id, full_name, avatar_url, email)")
+      .select("*, profiles(id, full_name, avatar_url)")
       .eq("date", date);
 
     if (data) {
@@ -91,7 +94,7 @@ export function useReservations(initialByDay: ByDay, selectedDate: string) {
      */
     applyReserveOptimistic: (
       seatId: number,
-      me: Pick<Profile, "id" | "full_name" | "avatar_url" | "email">
+      me: Pick<Profile, "id" | "full_name" | "avatar_url">
     ) => {
       setByDay((prev) => {
         const day = (prev[selectedDate] ?? []).filter(

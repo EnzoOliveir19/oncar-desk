@@ -15,13 +15,16 @@ export default async function DeskPage() {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  // Profile
-  const { data: profile } = await supabase
+  // Profile — só as colunas seguras. Email nunca sai do banco pelo API depois
+  // do REVOKE em §5 do schema; a gente pega do JWT via auth.getUser() e junta
+  // manualmente. Assim `select *` também não expõe email de ninguém.
+  const { data: profileRow } = await supabase
     .from("profiles")
-    .select("*")
+    .select("id, full_name, avatar_url")
     .eq("id", user.id)
-    .single<Profile>();
-  if (!profile) return null;
+    .single<Omit<Profile, "email">>();
+  if (!profileRow) return null;
+  const profile: Profile = { ...profileRow, email: user.email ?? "" };
 
   // Seats (fixos, 11 linhas)
   const { data: seats } = await supabase
@@ -29,11 +32,13 @@ export default async function DeskPage() {
     .select("*")
     .order("id");
 
-  // Reservas dos próximos 5 dias úteis
+  // Reservas dos próximos 5 dias úteis.
+  // NÃO pegamos `email` no join — mostraria emails de outros usuários no
+  // DevTools/Network. Cliente só precisa de nome + avatar pra renderizar.
   const days = getWeekdaysAhead(5);
   const { data: allReservations } = await supabase
     .from("reservations")
-    .select("*, profiles(id, full_name, avatar_url, email)")
+    .select("*, profiles(id, full_name, avatar_url)")
     .in("date", days);
 
   // Agrupa por data

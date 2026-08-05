@@ -125,11 +125,12 @@ export function DeskClient({
 
       // Snapshot pra reverter se o servidor recusar
       const snapshot = reservations;
+      // `me` NÃO inclui email — otimista popula o cache com o mesmo shape do
+      // realtime (que também não traz email por segurança)
       const me = {
         id: profile.id,
         full_name: profile.full_name,
         avatar_url: profile.avatar_url,
-        email: profile.email,
       };
 
       if (myReservation) {

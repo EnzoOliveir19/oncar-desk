@@ -38,7 +38,6 @@ export type Reservation = {
   created_at: string;
 };
 
-/** Reserva com dados do usuário (útil pra renderizar o mapa) */
-export type ReservationWithProfile = Reservation & {
-  profile: Pick<Profile, "id" | "full_name" | "avatar_url" | "email">;
-};
+// Nota: `ReservationWithProfile` mora em `lib/hooks/use-reservations.ts`
+// porque casa com o shape real do join do Supabase (`profiles` plural, sem
+// email por segurança). Não redeclarar aqui pra evitar drift.

@@ -289,6 +289,19 @@ create policy "usuário deleta própria reserva (não retroativa)"
 
 
 -- ============================
+-- 5b. Column-level ACL em profiles
+-- ============================
+-- RLS controla LINHAS visíveis; column-level GRANT controla COLUNAS.
+-- Objetivo: emails de usuários NUNCA saem do banco pelo PostgREST — nem via
+-- select direto, nem via join `reservations, profiles(...)`, nem via DevTools.
+-- Email próprio do usuário atual continua acessível via auth.users (JWT no
+-- cookie), que é a fonte de verdade correta pra isso.
+
+revoke select on public.profiles from authenticated;
+grant  select (id, full_name, avatar_url) on public.profiles to authenticated;
+
+
+-- ============================
 -- 6. REALTIME
 -- ============================
 
