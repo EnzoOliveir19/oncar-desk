@@ -65,6 +65,15 @@ body {
   border-radius: 4px;
 }
 
+/* Esconde scrollbar mas mantém scroll funcional — pra day tabs no mobile */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 /* Reduced motion — desativa TODAS as animações e transições */
 @media (prefers-reduced-motion: reduce) {
   *,

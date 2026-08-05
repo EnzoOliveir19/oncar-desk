@@ -56,12 +56,14 @@ export function DeskClient({
   }
   const occupiedCount = reservations.length;
 
-  // ── Cursor parallax no mapa (respeita reduced-motion) ─────────
+  // ── Cursor parallax no mapa ─────────────────────────────────
+  // Desliga em: reduced-motion + touch primário (celular/tablet — parallax
+  // não faz sentido sem cursor real, e pode brigar com pinch-to-zoom).
   const mapWrapRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (mql.matches) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (window.matchMedia("(pointer: coarse)").matches) return;
 
     let raf = 0;
     let tx = 0,
@@ -179,22 +181,26 @@ export function DeskClient({
       <div className="grain-overlay" aria-hidden />
 
       {/* ── Chrome ─────────────────────────────────────── */}
-      <header className="fixed top-0 left-0 right-0 z-10 flex items-center justify-between px-6 py-3.5 bg-gradient-to-b from-canvas/75 via-canvas/40 to-transparent backdrop-blur-md">
-        <div className="flex items-center gap-6">
-          <span className="font-mono text-[11px] tracking-[0.25em] text-text-secondary uppercase pr-5 border-r border-hairline">
+      <header className="fixed top-0 left-0 right-0 z-10 flex items-center justify-between gap-3 px-3 py-2.5 sm:px-6 sm:py-3.5 bg-gradient-to-b from-canvas/75 via-canvas/40 to-transparent backdrop-blur-md">
+        <div className="flex items-center gap-3 sm:gap-6 min-w-0 flex-1">
+          {/* Brand: só aparece em sm+ pra economizar espaço no mobile */}
+          <span className="hidden sm:inline-block font-mono text-[11px] tracking-[0.25em] text-text-secondary uppercase pr-5 border-r border-hairline shrink-0">
             <b className="font-medium text-text-primary">Oncar</b>&nbsp;Desk
           </span>
-          <DayTabs
-            days={days}
-            selected={selectedDate}
-            onSelect={(d) => {
-              setSelectedDate(d);
-              setError(null);
-            }}
-            counts={liveCounts}
-          />
+          {/* Day tabs: em mobile pode scrollar horizontalmente se apertar */}
+          <div className="overflow-x-auto scrollbar-none -mx-1 px-1">
+            <DayTabs
+              days={days}
+              selected={selectedDate}
+              onSelect={(d) => {
+                setSelectedDate(d);
+                setError(null);
+              }}
+              counts={liveCounts}
+            />
+          </div>
         </div>
-        <div className="flex items-center gap-5">
+        <div className="flex items-center gap-2 sm:gap-5 shrink-0">
           <OccupancyBadge count={occupiedCount} total={11} />
           <UserMenu profile={profile} />
         </div>
