@@ -156,8 +156,6 @@ export function Chair({
     avatarCoords = { avx, avy, sx, sy };
   }
 
-  const [nameX, nameY] = proj(e, n, 0);
-
   return (
     <g
       onClick={canClick ? onClick : undefined}
@@ -272,6 +270,26 @@ export function Chair({
       {/* Avatar flutuando acima do encosto (quando ocupada) */}
       {isOccupied && avatarCoords && (
         <>
+          {/* Nome acima do avatar — desenhado ANTES do avatar pra ficar atrás
+              caso um dia coincida, e com paint-order stroke pra dar um contorno
+              escuro que garante legibilidade sobre qualquer fundo */}
+          <text
+            x={avatarCoords.avx}
+            y={avatarCoords.avy - 12}
+            textAnchor="middle"
+            fontSize={8}
+            fontWeight={500}
+            fill="#D8DAE0"
+            stroke="#0B0C10"
+            strokeWidth={2.2}
+            strokeLinejoin="round"
+            paintOrder="stroke"
+            fontFamily="var(--font-geist-sans), ui-sans-serif, sans-serif"
+            className="select-none pointer-events-none"
+          >
+            {firstName}
+          </text>
+
           <ellipse
             cx={avatarCoords.sx}
             cy={avatarCoords.sy + 2}
@@ -325,21 +343,6 @@ export function Chair({
             </>
           )}
         </>
-      )}
-
-      {/* Nome / label */}
-      {isOccupied && (
-        <text
-          x={nameX}
-          y={nameY + 22}
-          textAnchor="middle"
-          fontSize={9}
-          fill="#9095A3"
-          fontFamily="var(--font-geist-sans), ui-sans-serif, sans-serif"
-          className="select-none pointer-events-none"
-        >
-          {firstName}
-        </text>
       )}
     </g>
   );
