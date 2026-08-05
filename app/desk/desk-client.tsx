@@ -54,7 +54,7 @@ export function DeskClient({
   for (const d of days) {
     liveCounts[d] = reservationsByDay[d]?.length ?? initialCounts[d] ?? 0;
   }
-  const hotDeskCount = reservations.filter((r) => r.seat_id !== 1).length;
+  const occupiedCount = reservations.length;
 
   // ── Cursor parallax no mapa (respeita reduced-motion) ─────────
   const mapWrapRef = useRef<HTMLDivElement>(null);
@@ -195,7 +195,7 @@ export function DeskClient({
           />
         </div>
         <div className="flex items-center gap-5">
-          <OccupancyBadge count={hotDeskCount} total={10} />
+          <OccupancyBadge count={occupiedCount} total={11} />
           <UserMenu profile={profile} />
         </div>
       </header>

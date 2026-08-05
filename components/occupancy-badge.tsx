@@ -3,13 +3,13 @@
 import { cn } from "@/lib/utils";
 
 type Props = {
-  /** Contagem de HOT-DESKS ocupadas (Gustavo não conta, ele é fixo) */
+  /** Cadeiras ocupadas no dia selecionado */
   count: number;
-  /** Total de hot-desks disponíveis */
+  /** Total de cadeiras disponíveis (11 depois que a Solo NW virou hot-desk) */
   total?: number;
 };
 
-export function OccupancyBadge({ count, total = 10 }: Props) {
+export function OccupancyBadge({ count, total = 11 }: Props) {
   const dots = Array.from({ length: total }, (_, i) => i < count);
   const isFull = count >= total;
 

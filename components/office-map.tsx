@@ -46,11 +46,11 @@ export function OfficeMap({
   disabled,
   dayKey,
 }: Props) {
-  // Só hot-desks contam pro "cheio" (Gustavo é fixo, sempre lá)
-  const hotDeskCount = reservations.filter((r) => r.seat_id !== 1).length;
+  // Todos os 11 assentos contam agora (a Solo NW virou hot-desk).
+  const occupiedCount = reservations.length;
   const [floorColorA, floorColorB] = useMemo(
-    () => interpolateFloorTemp(hotDeskCount / 10),
-    [hotDeskCount]
+    () => interpolateFloorTemp(occupiedCount / 11),
+    [occupiedCount]
   );
 
   const reservationMap = useMemo(

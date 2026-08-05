@@ -81,7 +81,9 @@ create index reservations_user_id_idx on public.reservations(user_id);
 --   update public.seats set fixed_user_email='gustavo@oncarapp.com.br' where id=1;
 
 insert into public.seats (id, label, cluster, position, is_fixed, fixed_user_email) values
-  ( 1, 'Gustavo',       'gustavo', 'solo',            true,  'gustavo@oncarapp.com.br'),
+  -- id=1 era a cadeira fixa do diretor. Liberada em 2026-08 pra qualquer um reservar.
+  -- Label 'Solo NW' descreve a posição (canto noroeste, mesa solo).
+  ( 1, 'Solo NW',       'gustavo', 'solo',            false, null),
   ( 2, 'Cluster A - Ponta',  'a', 'ponta',            false, null),
   ( 3, 'Cluster A - Cima Esq', 'a', '2x2-top-left',   false, null),
   ( 4, 'Cluster A - Cima Dir', 'a', '2x2-top-right',  false, null),
@@ -176,8 +178,9 @@ create trigger validate_reservation_trigger
   for each row execute function public.validate_reservation();
 
 
--- 4.3 Trigger de notificação: quando as 10 hot-desks batem (Gustavo, cadeira
--- fixa id=1, não conta — ele está sempre lá), marca pra notificar no Slack.
+-- 4.3 Trigger de notificação: quando as 11 cadeiras fecham (todas ocupadas),
+-- marca pra notificar no Slack. Historicamente id=1 era fixa do Gustavo e
+-- não contava — foi liberada em 2026-08, agora todos os 11 assentos contam.
 -- A chamada HTTP acontece via Edge Function (ver §7 mais abaixo), disparada por
 -- pg_net.http_post logo depois do insert em daily_notifications.
 create or replace function public.notify_office_full()
@@ -193,9 +196,9 @@ declare
 begin
   select count(*) into hotdesk_count
   from public.reservations
-  where date = new.date and seat_id <> 1;
+  where date = new.date;
 
-  if hotdesk_count = 10 then
+  if hotdesk_count = 11 then
     -- Idempotência: só dispara uma vez por dia
     select exists (
       select 1 from public.daily_notifications where date = new.date
@@ -217,7 +220,7 @@ begin
             headers := '{"Content-Type": "application/json"}'::jsonb,
             body := jsonb_build_object(
               'text', format(
-                '🔥 Escritório lotado em %s! 10/10 hot-desks ocupadas.',
+                '🔥 Escritório lotado em %s! 11/11 cadeiras ocupadas.',
                 to_char(new.date, 'DD/MM')
               )
             )

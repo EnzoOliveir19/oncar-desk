@@ -328,7 +328,7 @@ export function Chair({
       )}
 
       {/* Nome / label */}
-      {isOccupied ? (
+      {isOccupied && (
         <text
           x={nameX}
           y={nameY + 22}
@@ -340,20 +340,7 @@ export function Chair({
         >
           {firstName}
         </text>
-      ) : isFixed ? (
-        <text
-          x={nameX}
-          y={nameY + 22}
-          textAnchor="middle"
-          fontSize={8}
-          fill="#545866"
-          fontFamily="var(--font-geist-mono), ui-monospace, monospace"
-          letterSpacing="0.12em"
-          className="select-none pointer-events-none"
-        >
-          GUSTAVO
-        </text>
-      ) : null}
+      )}
     </g>
   );
 }
