@@ -36,8 +36,8 @@ export function DayTabs({ days, selected, onSelect, counts }: Props) {
           >
             <span
               className={cn(
-                "font-mono text-[10px] font-medium uppercase tracking-[0.15em]",
-                isActive ? "text-accent-glow" : "text-text-muted"
+                "font-mono text-[11px] font-medium uppercase tracking-[0.15em]",
+                isActive ? "text-accent-glow" : "text-text-secondary"
               )}
             >
               {weekday}
