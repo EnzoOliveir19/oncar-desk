@@ -48,10 +48,14 @@ export function OfficeMap({
 }: Props) {
   // Todos os 11 assentos contam agora (a Solo NW virou hot-desk).
   const occupiedCount = reservations.length;
+  const occupancyRatio = occupiedCount / 11;
   const [floorColorA, floorColorB] = useMemo(
-    () => interpolateFloorTemp(occupiedCount / 11),
-    [occupiedCount]
+    () => interpolateFloorTemp(occupancyRatio),
+    [occupancyRatio]
   );
+  // Intensidade da luz da lâmpada — vazio ~55%, cheio 100%.
+  // Metáfora: "cada monitor aceso soma luz na sala".
+  const lampIntensity = 0.55 + 0.45 * occupancyRatio;
 
   const reservationMap = useMemo(
     () => new Map(reservations.map((r) => [r.seat_id, r])),
@@ -153,18 +157,18 @@ export function OfficeMap({
           <stop offset="100%" stopColor="#3E5EE8" stopOpacity="0" />
         </radialGradient>
         <radialGradient id="lampPool" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#FFC988" stopOpacity="0.14" />
-          <stop offset="55%" stopColor="#E8A05B" stopOpacity="0.05" />
+          <stop offset="0%" stopColor="#FFD79E" stopOpacity="0.28" />
+          <stop offset="50%" stopColor="#FFC988" stopOpacity="0.12" />
           <stop offset="100%" stopColor="#E8A05B" stopOpacity="0" />
         </radialGradient>
         <radialGradient id="lampBulb" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#FFF0D6" stopOpacity="1" />
-          <stop offset="55%" stopColor="#FFC988" stopOpacity="0.75" />
+          <stop offset="0%" stopColor="#FFFDF5" stopOpacity="1" />
+          <stop offset="55%" stopColor="#FFC988" stopOpacity="0.85" />
           <stop offset="100%" stopColor="#E8A05B" stopOpacity="0" />
         </radialGradient>
         <radialGradient id="lampBloom" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#FFC988" stopOpacity="0.35" />
-          <stop offset="60%" stopColor="#E8A05B" stopOpacity="0.10" />
+          <stop offset="0%" stopColor="#FFDFA8" stopOpacity="0.55" />
+          <stop offset="55%" stopColor="#FFC988" stopOpacity="0.20" />
           <stop offset="100%" stopColor="#E8A05B" stopOpacity="0" />
         </radialGradient>
         <linearGradient id="floorFill" x1="0" y1="0" x2="1" y2="1">
@@ -200,14 +204,14 @@ export function OfficeMap({
       <Floor />
       <FloorGrid />
       <FloorGrain />
-      <LampFloorPool />
+      <LampFloorPool intensity={lampIntensity} />
       <Walls />
       <Copa />
 
       {sortedItems}
 
       <Porta />
-      <CeilingLamp />
+      <CeilingLamp intensity={lampIntensity} />
     </svg>
   );
 }
@@ -279,17 +283,31 @@ function FloorGrain() {
   );
 }
 
-function LampFloorPool() {
+function LampFloorPool({ intensity }: { intensity: number }) {
   const [x, y] = proj(LAMP.e, LAMP.n, 0);
   return (
-    <ellipse
-      cx={x}
-      cy={y}
-      rx={340}
-      ry={180}
-      fill="url(#lampPool)"
-      pointerEvents="none"
-    />
+    <>
+      {/* Pool principal — cresce com ocupação */}
+      <ellipse
+        cx={x}
+        cy={y}
+        rx={420}
+        ry={230}
+        fill="url(#lampPool)"
+        opacity={intensity}
+        pointerEvents="none"
+      />
+      {/* Camada externa fraquinha pra atmosfera — cobre o resto do chão */}
+      <ellipse
+        cx={x}
+        cy={y}
+        rx={620}
+        ry={340}
+        fill="url(#lampPool)"
+        opacity={intensity * 0.35}
+        pointerEvents="none"
+      />
+    </>
   );
 }
 
@@ -1111,7 +1129,7 @@ function Porta() {
   );
 }
 
-function CeilingLamp() {
+function CeilingLamp({ intensity }: { intensity: number }) {
   const { e, n, zShadeTop, zShadeBot, rTop, rBot, zCeiling } = LAMP;
   const [wx1, wy1] = proj(e, n, zCeiling);
   const [wx2, wy2] = proj(e, n, zShadeTop);
@@ -1129,12 +1147,14 @@ function CeilingLamp() {
         strokeWidth={1.2}
         strokeLinecap="round"
       />
+      {/* Bloom — escala com a intensidade */}
       <ellipse
         cx={gx}
         cy={gy}
-        rx={rBot * 3.5}
-        ry={rBot * 2.4}
+        rx={rBot * (3.5 + intensity * 1.5)}
+        ry={rBot * (2.4 + intensity * 1.0)}
         fill="url(#lampBloom)"
+        opacity={intensity}
         pointerEvents="none"
       />
       {/* Frustum: south, west, top */}
@@ -1174,17 +1194,18 @@ function CeilingLamp() {
       <ellipse
         cx={bx}
         cy={by}
-        rx={rBot * 0.9}
-        ry={rBot * 0.55}
+        rx={rBot * (0.9 + intensity * 0.15)}
+        ry={rBot * (0.55 + intensity * 0.15)}
         fill="url(#lampBulb)"
+        opacity={0.7 + intensity * 0.3}
       />
       <ellipse
         cx={bx}
         cy={by}
         rx={rBot * 0.35}
         ry={rBot * 0.22}
-        fill="#FFF0D6"
-        opacity={0.85}
+        fill="#FFFDF5"
+        opacity={0.6 + intensity * 0.4}
       />
     </>
   );
